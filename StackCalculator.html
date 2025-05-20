@@ -20,11 +20,24 @@
         constructor(src) {
             this.tokens = src.split('')
         }
-        peekToken() {
-            return this.tokens[0]
+
+        isOp(op) {
+            return '+-*/()'.includes(op)
         }
+
+        peekToken() {
+            if (this.isOp(this.tokens[0]))
+                return this.tokens[0]
+            else
+                return Number(this.tokens[0])
+        }
+
         getToken() {
-            return this.tokens.shift()
+            const token = this.tokens.shift()
+            if (this.isOp(token))
+                return token
+            else
+                return Number(token)
         }
     }
 
@@ -51,6 +64,7 @@
                 while (opStack.length && !isLParenthesis(opStack.at(-1)))
                     postfixQueue.push(opStack.pop())
                 opStack.pop()
+                lexer.getToken()
             } else if (isOp(token)) {
                 while (opStack.length && canStackPop(token))
                     postfixQueue.push(opStack.pop())
@@ -65,18 +79,40 @@
         return postfixQueue
     }
 
-    const evalPostfixQueue = postfixQueue => {
+    const calcInfix = (op, left, right) => {
+        switch (op) {
+            case '+':
+                return left + right
+            case '-':
+                return left - right
+            case '*':
+                return left * right
+            case '/':
+                return left / right
+        }
+    }
 
+    const evalPostfixQueue = postfixQueue => {
+        const stack = []
+        for (const token of postfixQueue) {
+            if (isOp(token)) {
+                const right = stack.pop()
+                const left = stack.pop()
+                const val = calcInfix(token, left, right)
+                stack.push(val)
+            } else
+                stack.push(token)
+        }
+        return stack.pop()
     }
 
     const calc = src => {
         const postfixQueue = toPostfix(src)
-        const val = evalPostfixQueue(postfixQueue)
-        return val
+        return evalPostfixQueue(postfixQueue)
     }
 
     ;(_ => {
-        src = '1*3+2'
+        src = '2-(3+2)-2'
         try {
             val = calc(src)
             debug(val)
