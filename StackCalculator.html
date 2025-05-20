@@ -14,14 +14,69 @@
 </head>
 <body>
 <script>
-    const debug = document.write.bind(document)
+    const debug = msg => document.write(`<div>${msg}</div>`)
+
+    class Lexer {
+        constructor(src) {
+            this.tokens = src.split('')
+        }
+        peekToken() {
+            return this.tokens[0]
+        }
+        getToken() {
+            return this.tokens.shift()
+        }
+    }
+
+    const isOp = op => '+-*/'.includes(op)
+
+    toPostfix = src => {
+        const lexer = new Lexer(src)
+        const postfixQueue = []
+        const opStack = []
+        const isOpMultiOrDiv = op => op === '*' || op === '/'
+        const isLParenthesis = op => op === '('
+        const isRParenthesis = op => op === ')'
+        const canStackPop = op => {
+            if (isOpMultiOrDiv(op))
+                return isOpMultiOrDiv(opStack.at(-1))
+            else
+                return !isLParenthesis(opStack.at(-1))
+        }
+        let token = lexer.peekToken()
+        while (token) {
+            if (isLParenthesis(token))
+                opStack.push(lexer.getToken())
+            else if (isRParenthesis(token)) {
+                while (opStack.length && !isLParenthesis(opStack.at(-1)))
+                    postfixQueue.push(opStack.pop())
+                opStack.pop()
+            } else if (isOp(token)) {
+                while (opStack.length && canStackPop(token))
+                    postfixQueue.push(opStack.pop())
+                opStack.push(lexer.getToken())
+            } else
+                postfixQueue.push(lexer.getToken())
+            token = lexer.peekToken()
+        }
+        while (opStack.length) {
+            postfixQueue.push(opStack.pop())
+        }
+        return postfixQueue
+    }
+
+    const evalPostfixQueue = postfixQueue => {
+
+    }
 
     const calc = src => {
-        return src
+        const postfixQueue = toPostfix(src)
+        const val = evalPostfixQueue(postfixQueue)
+        return val
     }
 
     ;(_ => {
-        src = '1+2'
+        src = '1*3+2'
         try {
             val = calc(src)
             debug(val)
