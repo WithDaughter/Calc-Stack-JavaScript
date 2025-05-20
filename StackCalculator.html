@@ -33,14 +33,14 @@
         peekToken() {
             while (this.isSpace(this.tokens[0]))
                 this.tokens.shift()
-            if (this.tokens.length === 0) return EOF
+            if (!this.tokens.length) return EOF
             if (typeof this.tokens[0] === 'number')
                 return this.tokens[0]
             else if (this.isOp(this.tokens[0]))
                 return this.tokens[0]
             else {
                 let nums = ''
-                while (!this.isSpace(this.tokens[0]) && !this.isOp(this.tokens[0]))
+                while (this.tokens.length && !this.isSpace(this.tokens[0]) && !this.isOp(this.tokens[0]))
                     nums += this.tokens.shift()
                 const num = Number(nums)
                 this.tokens.unshift(num)
@@ -120,13 +120,75 @@
         return stack.pop()
     }
 
+    class Node {
+        constructor(value, left, right) {
+            this.data = value
+            this.left = left
+            this.right = right
+        }
+
+        prefix() {
+            const val = this.data
+            const left = this.left ? ` ${this.left.prefix()}` : ''
+            const right = this.right ? ` ${this.right.prefix()}` : ''
+            return `${val}${left}${right}`
+        }
+
+        infix() {
+            const left = this.left ? `${this.left.infix()} ` : ''
+            const val = this.data
+            const right = this.right ? ` ${this.right.infix()}` : ''
+            return left ? `(${left}${val}${right})` : `${val}`
+        }
+
+        postfix() {
+            const left = this.left ? `${this.left.postfix()} ` : ''
+            const right = this.right ? `${this.right.postfix()} ` : ''
+            const val = this.data
+            return `${left}${right}${val}`
+        }
+    }
+
+    class ExpressionTree {
+        constructor(postfix) {
+            const nodes = []
+            for (const val of postfix) {
+                if (isOp(val)) {
+                    const right = nodes.pop()
+                    const left = nodes.pop()
+                    nodes.push(new Node(val, left, right))
+                } else
+                    nodes.push(new Node(val))
+            }
+            this.root = nodes.pop()
+        }
+
+        prefix() {
+            return this.root.prefix()
+        }
+
+        infix() {
+            return this.root.infix()
+        }
+
+        postfix() {
+            return this.root.postfix()
+        }
+    }
+
     const calc = src => {
         const postfixQueue = toPostfix(src)
+        debug(src)
+        const tree = new ExpressionTree(postfixQueue)
+        debug(`Prefix : ${tree.prefix()}`)
+        debug(`In-fix : ${tree.infix()}`)
+        debug(`Postfix: ${tree.postfix()}`)
         return evalPostfixQueue(postfixQueue)
     }
 
     ;(_ => {
-        const src = '((300.532 -299.532)+(600/(599 + 1))) - (3 + 2) - (1 + (5 - 4))'
+        // const src = '((300.532 -299.532)+(600/(599 + 1))) - (3 + 2) - (1 + (5 - 4))'
+        let src = '((2.5 * 4) *5) + (1 + 0.5 - 0.5) - 1'
         try {
             debug(calc(src))
         } catch (e) {
